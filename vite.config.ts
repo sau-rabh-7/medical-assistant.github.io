@@ -5,7 +5,7 @@ import { componentTagger } from "lovable-tagger";
 
 // 🔥 REPO NAME = 'SYMPTOM-SENSEI-AI-CHAT'
 export default defineConfig(({ mode }) => ({
-  base: '/SYMPTOM-SENSEI-AI-CHAT/', // <-- This line is CRUCIAL for GitHub Pages
+ // base: '/medical-assistant/',
   server: {
     host: "::",
     port: 8080,
