@@ -1,11 +1,12 @@
+
 import { useState, useRef, useEffect } from 'react';
-import { Send, Upload, Bot, User, Loader2, Image as ImageIcon, Settings } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { ApiSettings } from '@/components/ApiSettings';
+import { ChatHeader } from '@/components/ChatHeader';
+import { ChatMessage } from '@/components/ChatMessage';
+import { ChatInput } from '@/components/ChatInput';
+import { TypingIndicator } from '@/components/TypingIndicator';
 import { aiService } from '@/services/aiService';
 
 interface Message {
@@ -30,7 +31,6 @@ const Index = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isConfigured, setIsConfigured] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -110,7 +110,6 @@ Would you like me to help you with any other symptoms or questions?`;
     localStorage.setItem('ai_configured', 'true');
   };
 
-  // Check if API is already configured on mount
   useEffect(() => {
     const configured = localStorage.getItem('ai_configured');
     if (configured === 'true') {
@@ -135,188 +134,49 @@ Would you like me to help you with any other symptoms or questions?`;
     await generateResponse(messageToProcess);
   };
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: "Invalid file",
-        description: "Please upload an image file.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const imageData = e.target?.result as string;
-      
-      const userMessage: Message = {
-        id: Date.now().toString(),
-        type: 'user',
-        content: "I've uploaded an image for analysis.",
-        timestamp: new Date(),
-        image: imageData,
-      };
-
-      setMessages(prev => [...prev, userMessage]);
-      await generateResponse("Image uploaded for symptom analysis", imageData);
+  const handleImageUpload = async (imageData: string) => {
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: "I've uploaded an image for analysis.",
+      timestamp: new Date(),
+      image: imageData,
     };
 
-    reader.readAsDataURL(file);
-    event.target.value = '';
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
+    setMessages(prev => [...prev, userMessage]);
+    await generateResponse("Image uploaded for symptom analysis", imageData);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <div className="container mx-auto max-w-4xl h-screen flex flex-col">
-        {/* Header */}
-        <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 p-4 rounded-t-lg mt-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center">
-                <Bot className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-800">Medical Consultation Assistant</h1>
-                <p className="text-sm text-gray-600">
-                  AI-powered department recommendations {!isConfigured && '(API key required)'}
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setShowSettings(true)}
-              className="h-10 w-10"
-            >
-              <Settings className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
+        <ChatHeader 
+          isConfigured={isConfigured}
+          onSettingsClick={() => setShowSettings(true)}
+        />
 
-        {/* Messages */}
         <div className="flex-1 bg-white/60 backdrop-blur-sm overflow-hidden">
           <ScrollArea className="h-full p-4" ref={scrollAreaRef}>
             <div className="space-y-4">
               {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  {message.type === 'bot' && (
-                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                      <Bot className="w-4 h-4 text-white" />
-                    </div>
-                  )}
-                  
-                  <Card className={`max-w-[80%] p-4 ${
-                    message.type === 'user' 
-                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' 
-                      : 'bg-white border border-gray-200'
-                  }`}>
-                    {message.image && (
-                      <div className="mb-3">
-                        <img 
-                          src={message.image} 
-                          alt="Uploaded symptom" 
-                          className="max-w-full h-auto rounded-lg max-h-48 object-cover"
-                        />
-                      </div>
-                    )}
-                    <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                      {message.content}
-                    </div>
-                    <div className={`text-xs mt-2 opacity-70 ${
-                      message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
-                    }`}>
-                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  </Card>
-
-                  {message.type === 'user' && (
-                    <div className="w-8 h-8 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                      <User className="w-4 h-4 text-white" />
-                    </div>
-                  )}
-                </div>
+                <ChatMessage key={message.id} message={message} />
               ))}
 
-              {isTyping && (
-                <div className="flex gap-3 justify-start">
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <Bot className="w-4 h-4 text-white" />
-                  </div>
-                  <Card className="max-w-[80%] p-4 bg-white border border-gray-200">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
-                      <span className="text-sm text-gray-600">
-                        {isGenerating ? 'Analyzing symptoms with AI...' : 'Typing...'}
-                      </span>
-                    </div>
-                  </Card>
-                </div>
-              )}
+              {isTyping && <TypingIndicator isGenerating={isGenerating} />}
               
               <div ref={messagesEndRef} />
             </div>
           </ScrollArea>
         </div>
 
-        {/* Input */}
-        <div className="bg-white/80 backdrop-blur-sm border-t border-gray-200 p-4 rounded-b-lg mb-4">
-          <div className="flex gap-3 items-end">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="hidden"
-            />
-            
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => fileInputRef.current?.click()}
-              className="flex-shrink-0 h-10 w-10"
-              disabled={isGenerating || !isConfigured}
-            >
-              <ImageIcon className="w-4 h-4" />
-            </Button>
-
-            <div className="flex-1 relative">
-              <Input
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder={isConfigured ? "Describe your symptoms or upload an image..." : "Configure API key in settings first..."}
-                className="pr-12 min-h-[40px] resize-none"
-                disabled={isGenerating || !isConfigured}
-              />
-            </div>
-
-            <Button 
-              onClick={handleSendMessage}
-              disabled={!inputValue.trim() || isGenerating || !isConfigured}
-              size="icon"
-              className="flex-shrink-0 h-10 w-10 bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
-          
-          <p className="text-xs text-gray-500 mt-2 text-center">
-            This AI assistant provides general guidance only. Always consult healthcare professionals for medical advice.
-          </p>
-        </div>
+        <ChatInput
+          inputValue={inputValue}
+          setInputValue={setInputValue}
+          onSendMessage={handleSendMessage}
+          onImageUpload={handleImageUpload}
+          isGenerating={isGenerating}
+          isConfigured={isConfigured}
+        />
       </div>
 
       <ApiSettings
