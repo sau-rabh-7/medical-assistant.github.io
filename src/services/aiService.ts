@@ -7,8 +7,11 @@ interface MedicalResponse {
   disclaimer: string;
 }
 
-const MEDICAL_PROMPT = `You are a medical consultation assistant. Your role is to help users identify which medical department they should consult based on their symptoms. You must ALWAYS follow this exact JSON format in your response:
+const MEDICAL_PROMPT = `You are a medical consultation assistant. Analyze the user's message and respond appropriately:
 
+1. If the user is greeting you or asking general questions (like "hello", "hi", "how are you", etc.), respond naturally as a friendly medical assistant WITHOUT using the JSON format.
+
+2. If the user is describing medical symptoms or asking for medical advice, then use this exact JSON format:
 {
   "department": "Recommended medical department (e.g., Cardiology, Dermatology, Internal Medicine)",
   "reasoning": "Clear explanation of why this department is recommended based on the symptoms",
@@ -17,7 +20,7 @@ const MEDICAL_PROMPT = `You are a medical consultation assistant. Your role is t
   "disclaimer": "Important medical disclaimer"
 }
 
-Guidelines:
+Guidelines for medical responses:
 - Be professional and empathetic
 - Focus on symptoms, not diagnosis
 - Recommend appropriate medical departments
@@ -31,7 +34,7 @@ Guidelines:
 - For mental health → Psychiatry/Psychology
 - For general symptoms → Internal Medicine
 
-User's symptoms: `;
+User's message: `;
 
 export class AIService {
   private provider: 'openai' | 'gemini' = 'openai';
@@ -42,7 +45,7 @@ export class AIService {
     this.apiKey = apiKey;
   }
 
-  async generateMedicalResponse(symptoms: string, imageData?: string): Promise<MedicalResponse> {
+  async generateMedicalResponse(symptoms: string, imageData?: string): Promise<MedicalResponse | string> {
     if (!this.apiKey) {
       throw new Error('API key not configured');
     }
@@ -59,7 +62,7 @@ export class AIService {
     }
   }
 
-  private async callOpenAI(symptoms: string, imageData?: string): Promise<MedicalResponse> {
+  private async callOpenAI(symptoms: string, imageData?: string): Promise<MedicalResponse | string> {
     const messages: any[] = [
       {
         role: 'system',
@@ -103,15 +106,20 @@ export class AIService {
     const data = await response.json();
     const content = data.choices[0]?.message?.content;
     
+    // Check if the response is JSON (medical analysis) or plain text (general response)
     try {
-      return JSON.parse(content);
+      const jsonResponse = JSON.parse(content);
+      if (jsonResponse.department && jsonResponse.reasoning) {
+        return jsonResponse;
+      }
     } catch {
-      // Fallback if JSON parsing fails
-      return this.parseFallbackResponse(content);
+      // If it's not JSON, return as plain text
     }
+    
+    return content;
   }
 
-  private async callGemini(symptoms: string, imageData?: string): Promise<MedicalResponse> {
+  private async callGemini(symptoms: string, imageData?: string): Promise<MedicalResponse | string> {
     const parts: any[] = [{ text: MEDICAL_PROMPT + symptoms }];
     
     if (imageData) {
@@ -148,12 +156,17 @@ export class AIService {
     const data = await response.json();
     const content = data.candidates[0]?.content?.parts[0]?.text;
     
+    // Check if the response is JSON (medical analysis) or plain text (general response)
     try {
-      return JSON.parse(content);
+      const jsonResponse = JSON.parse(content);
+      if (jsonResponse.department && jsonResponse.reasoning) {
+        return jsonResponse;
+      }
     } catch {
-      // Fallback if JSON parsing fails
-      return this.parseFallbackResponse(content);
+      // If it's not JSON, return as plain text
     }
+    
+    return content;
   }
 
   private parseFallbackResponse(content: string): MedicalResponse {

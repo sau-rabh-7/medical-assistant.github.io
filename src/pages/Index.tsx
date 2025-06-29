@@ -58,14 +58,22 @@ const Index = () => {
     try {
       const response = await aiService.generateMedicalResponse(userMessage, imageData);
       
-      const urgencyColors = {
-        low: 'text-green-600',
-        medium: 'text-yellow-600',
-        high: 'text-orange-600',
-        emergency: 'text-red-600'
-      };
+      let botResponseContent: string;
 
-      const botResponse = `**🏥 Recommended Department: ${response.department}**
+      // Check if response is a structured medical response or plain text
+      if (typeof response === 'string') {
+        // Plain text response for greetings, general questions, etc.
+        botResponseContent = response;
+      } else {
+        // Structured medical response
+        const urgencyColors = {
+          low: 'text-green-600',
+          medium: 'text-yellow-600',
+          high: 'text-orange-600',
+          emergency: 'text-red-600'
+        };
+
+        botResponseContent = `**🏥 Recommended Department: ${response.department}**
 
 **📋 Analysis:**
 ${response.reasoning}
@@ -81,11 +89,12 @@ ${response.disclaimer}
 ${response.urgency === 'emergency' ? '🚨 **EMERGENCY**: If this is a medical emergency, please call emergency services immediately!' : ''}
 
 Would you like me to help you with any other symptoms or questions?`;
+      }
 
       const botMessage: Message = {
         id: Date.now().toString(),
         type: 'bot',
-        content: botResponse,
+        content: botResponseContent,
         timestamp: new Date(),
       };
 
