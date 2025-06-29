@@ -1,11 +1,12 @@
-
 import { useState, useRef, useEffect } from 'react';
-import { Send, Upload, Bot, User, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Send, Upload, Bot, User, Loader2, Image as ImageIcon, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
+import { ApiSettings } from '@/components/ApiSettings';
+import { aiService } from '@/services/aiService';
 
 interface Message {
   id: string;
@@ -20,13 +21,15 @@ const Index = () => {
     {
       id: '1',
       type: 'bot',
-      content: "Hello! I'm your medical consultation assistant. I can help you understand your symptoms and recommend which medical department you should consult. Please describe your symptoms or upload an image if relevant. Remember, I'm here to guide you, but always consult with a healthcare professional for proper diagnosis.",
+      content: "Hello! I'm your medical consultation assistant powered by AI. I can help you understand your symptoms and recommend which medical department you should consult. Please configure your API key in settings first, then describe your symptoms or upload an image if relevant. Remember, I'm here to guide you, but always consult with a healthcare professional for proper diagnosis.",
       timestamp: new Date(),
     }
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [isConfigured, setIsConfigured] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -40,59 +43,42 @@ const Index = () => {
   }, [messages]);
 
   const generateResponse = async (userMessage: string, imageData?: string) => {
+    if (!isConfigured) {
+      toast({
+        title: "API Not Configured",
+        description: "Please configure your API key in settings first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsGenerating(true);
     setIsTyping(true);
 
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1500));
+      const response = await aiService.generateMedicalResponse(userMessage, imageData);
+      
+      const urgencyColors = {
+        low: 'text-green-600',
+        medium: 'text-yellow-600',
+        high: 'text-orange-600',
+        emergency: 'text-red-600'
+      };
 
-      // Mock AI response - in a real app, this would call OpenAI/Gemini API
-      const responses = [
-        {
-          symptoms: ['headache', 'fever', 'fatigue'],
-          department: 'Internal Medicine',
-          reasoning: 'Based on your symptoms of headache, fever, and fatigue, I recommend consulting with Internal Medicine first. These symptoms could indicate various conditions including viral infections, stress, or other systemic issues.'
-        },
-        {
-          symptoms: ['chest pain', 'shortness of breath'],
-          department: 'Cardiology',
-          reasoning: 'Your symptoms of chest pain and shortness of breath warrant immediate attention from a Cardiologist. These could be signs of heart-related conditions that require specialized care.'
-        },
-        {
-          symptoms: ['skin rash', 'itching', 'redness'],
-          department: 'Dermatology',
-          reasoning: 'For skin-related symptoms like rash, itching, and redness, I recommend consulting with a Dermatologist who specializes in skin conditions and can provide appropriate treatment.'
-        },
-        {
-          symptoms: ['joint pain', 'stiffness', 'swelling'],
-          department: 'Rheumatology',
-          reasoning: 'Joint pain, stiffness, and swelling are typically best evaluated by a Rheumatologist who specializes in conditions affecting joints, muscles, and bones.'
-        }
-      ];
+      const botResponse = `**🏥 Recommended Department: ${response.department}**
 
-      // Simple keyword matching for demo purposes
-      const lowerMessage = userMessage.toLowerCase();
-      let selectedResponse = responses[0]; // default
+**📋 Analysis:**
+${response.reasoning}
 
-      if (lowerMessage.includes('chest') || lowerMessage.includes('heart') || lowerMessage.includes('breath')) {
-        selectedResponse = responses[1];
-      } else if (lowerMessage.includes('skin') || lowerMessage.includes('rash') || lowerMessage.includes('itch')) {
-        selectedResponse = responses[2];
-      } else if (lowerMessage.includes('joint') || lowerMessage.includes('pain') && lowerMessage.includes('stiff')) {
-        selectedResponse = responses[3];
-      }
+**⚠️ Urgency Level:** <span class="${urgencyColors[response.urgency]}">${response.urgency.toUpperCase()}</span>
 
-      const botResponse = `**Recommended Department: ${selectedResponse.department}**
+**📝 Next Steps:**
+${response.nextSteps.map((step, index) => `${index + 1}. ${step}`).join('\n')}
 
-${selectedResponse.reasoning}
+**⚖️ Important Disclaimer:**
+${response.disclaimer}
 
-**Next Steps:**
-1. Schedule an appointment with ${selectedResponse.department}
-2. Prepare a list of all your symptoms and when they started
-3. Bring any relevant medical history or medications you're taking
-
-**Important:** This is a preliminary recommendation. If you're experiencing severe symptoms or this is an emergency, please seek immediate medical attention or call emergency services.
+${response.urgency === 'emergency' ? '🚨 **EMERGENCY**: If this is a medical emergency, please call emergency services immediately!' : ''}
 
 Would you like me to help you with any other symptoms or questions?`;
 
@@ -105,9 +91,10 @@ Would you like me to help you with any other symptoms or questions?`;
 
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
+      console.error('AI Response Error:', error);
       toast({
         title: "Error",
-        description: "Failed to generate response. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to generate response. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -115,6 +102,21 @@ Would you like me to help you with any other symptoms or questions?`;
       setIsTyping(false);
     }
   };
+
+  const handleApiSettings = (provider: 'openai' | 'gemini', apiKey: string) => {
+    aiService.setProvider(provider, apiKey);
+    setIsConfigured(true);
+    localStorage.setItem('ai_provider', provider);
+    localStorage.setItem('ai_configured', 'true');
+  };
+
+  // Check if API is already configured on mount
+  useEffect(() => {
+    const configured = localStorage.getItem('ai_configured');
+    if (configured === 'true') {
+      setIsConfigured(true);
+    }
+  }, []);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
@@ -178,14 +180,26 @@ Would you like me to help you with any other symptoms or questions?`;
       <div className="container mx-auto max-w-4xl h-screen flex flex-col">
         {/* Header */}
         <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 p-4 rounded-t-lg mt-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center">
-              <Bot className="w-6 h-6 text-white" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center">
+                <Bot className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold text-gray-800">Medical Consultation Assistant</h1>
+                <p className="text-sm text-gray-600">
+                  AI-powered department recommendations {!isConfigured && '(API key required)'}
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-semibold text-gray-800">Medical Consultation Assistant</h1>
-              <p className="text-sm text-gray-600">Get personalized department recommendations</p>
-            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShowSettings(true)}
+              className="h-10 w-10"
+            >
+              <Settings className="w-4 h-4" />
+            </Button>
           </div>
         </div>
 
@@ -245,7 +259,7 @@ Would you like me to help you with any other symptoms or questions?`;
                     <div className="flex items-center gap-2">
                       <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
                       <span className="text-sm text-gray-600">
-                        {isGenerating ? 'Analyzing symptoms...' : 'Typing...'}
+                        {isGenerating ? 'Analyzing symptoms with AI...' : 'Typing...'}
                       </span>
                     </div>
                   </Card>
@@ -273,7 +287,7 @@ Would you like me to help you with any other symptoms or questions?`;
               size="icon"
               onClick={() => fileInputRef.current?.click()}
               className="flex-shrink-0 h-10 w-10"
-              disabled={isGenerating}
+              disabled={isGenerating || !isConfigured}
             >
               <ImageIcon className="w-4 h-4" />
             </Button>
@@ -283,15 +297,15 @@ Would you like me to help you with any other symptoms or questions?`;
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Describe your symptoms or upload an image..."
+                placeholder={isConfigured ? "Describe your symptoms or upload an image..." : "Configure API key in settings first..."}
                 className="pr-12 min-h-[40px] resize-none"
-                disabled={isGenerating}
+                disabled={isGenerating || !isConfigured}
               />
             </div>
 
             <Button 
               onClick={handleSendMessage}
-              disabled={!inputValue.trim() || isGenerating}
+              disabled={!inputValue.trim() || isGenerating || !isConfigured}
               size="icon"
               className="flex-shrink-0 h-10 w-10 bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600"
             >
@@ -304,6 +318,12 @@ Would you like me to help you with any other symptoms or questions?`;
           </p>
         </div>
       </div>
+
+      <ApiSettings
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        onSave={handleApiSettings}
+      />
     </div>
   );
 };
