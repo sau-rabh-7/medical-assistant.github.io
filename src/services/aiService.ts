@@ -37,8 +37,8 @@ Guidelines for medical responses:
 User's message: `;
 
 export class AIService {
-  private provider: 'openai' | 'gemini' = 'openai';
-  private apiKey: string = '';
+  private provider: 'openai' | 'gemini' = 'gemini';
+  private apiKey: string = 'AIzaSyCtOzbIl0QGADIQky0hS0KN-qGfoULchMo';
 
   setProvider(provider: 'openai' | 'gemini', apiKey: string) {
     this.provider = provider;

@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from '@/hooks/use-toast';
@@ -112,6 +111,31 @@ Would you like me to help you with any other symptoms or questions?`;
     }
   };
 
+  const handleRegenerate = async (messageId: string) => {
+    const messageIndex = messages.findIndex(msg => msg.id === messageId);
+    if (messageIndex === -1) return;
+
+    // Find the previous user message
+    let userMessage = '';
+    let imageData: string | undefined;
+    
+    for (let i = messageIndex - 1; i >= 0; i--) {
+      if (messages[i].type === 'user') {
+        userMessage = messages[i].content;
+        imageData = messages[i].image;
+        break;
+      }
+    }
+
+    if (!userMessage) return;
+
+    // Remove the bot message that's being regenerated
+    setMessages(prev => prev.filter(msg => msg.id !== messageId));
+    
+    // Generate new response
+    await generateResponse(userMessage, imageData);
+  };
+
   const handleApiSettings = (provider: 'openai' | 'gemini', apiKey: string) => {
     aiService.setProvider(provider, apiKey);
     setIsConfigured(true);
@@ -120,8 +144,12 @@ Would you like me to help you with any other symptoms or questions?`;
   };
 
   useEffect(() => {
+    // Set as configured by default since we have a hardcoded API key
+    setIsConfigured(true);
+    
     const configured = localStorage.getItem('ai_configured');
-    if (configured === 'true') {
+    const provider = localStorage.getItem('ai_provider');
+    if (configured === 'true' && provider) {
       setIsConfigured(true);
     }
   }, []);
@@ -168,7 +196,11 @@ Would you like me to help you with any other symptoms or questions?`;
           <ScrollArea className="h-full p-4" ref={scrollAreaRef}>
             <div className="space-y-4">
               {messages.map((message) => (
-                <ChatMessage key={message.id} message={message} />
+                <ChatMessage 
+                  key={message.id} 
+                  message={message} 
+                  onRegenerate={message.type === 'bot' ? handleRegenerate : undefined}
+                />
               ))}
 
               {isTyping && <TypingIndicator isGenerating={isGenerating} />}
