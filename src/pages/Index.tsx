@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from '@/hooks/use-toast';
-import { ApiSettings } from '@/components/ApiSettings';
+// import { ApiSettings } from '@/components/ApiSettings'; // REMOVE THIS IMPORT
 import { ChatHeader } from '@/components/ChatHeader';
 import { ChatMessage } from '@/components/ChatMessage';
 import { ChatInput } from '@/components/ChatInput';
@@ -21,15 +21,16 @@ const Index = () => {
     {
       id: '1',
       type: 'bot',
-      content: "Hello! I'm your medical consultation assistant powered by AI. I can help you understand your symptoms and recommend which medical department you should consult. Please configure your API key in settings first, then describe your symptoms or upload an image if relevant. Remember, I'm here to guide you, but always consult with a healthcare professional for proper diagnosis.",
+      content: "Hello! I'm your medical consultation assistant powered by AI. I can help you understand your symptoms and recommend which medical department you should consult. Describe your symptoms or upload an image if relevant. Remember, I'm here to guide you, but always consult with a healthcare professional for proper diagnosis.", // UPDATED WELCOME MESSAGE
       timestamp: new Date(),
     }
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [isConfigured, setIsConfigured] = useState(false);
+  // const [showSettings, setShowSettings] = useState(false); // REMOVE THIS STATE
+  const [isConfigured, setIsConfigured] = useState(true); // HARDCODE TO TRUE SINCE API KEY IS NOW IN AIService
+
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -41,15 +42,17 @@ const Index = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Remove the API key configuration check within generateResponse if it's always configured
   const generateResponse = async (userMessage: string, imageData?: string) => {
-    if (!isConfigured) {
-      toast({
-        title: "API Not Configured",
-        description: "Please configure your API key in settings first.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // No need for isConfigured check here if it's always true and API key is hardcoded
+    // if (!isConfigured) {
+    //   toast({
+    //     title: "API Not Configured",
+    //     description: "Please configure your API key in settings first.",
+    //     variant: "destructive",
+    //   });
+    //   return;
+    // }
 
     setIsGenerating(true);
     setIsTyping(true);
@@ -59,12 +62,9 @@ const Index = () => {
       
       let botResponseContent: string;
 
-      // Check if response is a structured medical response or plain text
       if (typeof response === 'string') {
-        // Plain text response for greetings, general questions, etc.
         botResponseContent = response;
       } else {
-        // Structured medical response
         const urgencyColors = {
           low: 'text-green-600',
           medium: 'text-yellow-600',
@@ -115,7 +115,6 @@ Would you like me to help you with any other symptoms or questions?`;
     const messageIndex = messages.findIndex(msg => msg.id === messageId);
     if (messageIndex === -1) return;
 
-    // Find the previous user message
     let userMessage = '';
     let imageData: string | undefined;
     
@@ -129,29 +128,30 @@ Would you like me to help you with any other symptoms or questions?`;
 
     if (!userMessage) return;
 
-    // Remove the bot message that's being regenerated
     setMessages(prev => prev.filter(msg => msg.id !== messageId));
     
-    // Generate new response
     await generateResponse(userMessage, imageData);
   };
 
-  const handleApiSettings = (provider: 'openai' | 'gemini', apiKey: string) => {
-    aiService.setProvider(provider, apiKey);
-    setIsConfigured(true);
-    localStorage.setItem('ai_provider', provider);
-    localStorage.setItem('ai_configured', 'true');
-  };
+  // REMOVE THIS FUNCTION:
+  // const handleApiSettings = (provider: 'openai' | 'gemini', apiKey: string) => {
+  //   aiService.setProvider(provider, apiKey);
+  //   setIsConfigured(true);
+  //   localStorage.setItem('ai_provider', provider);
+  //   localStorage.setItem('ai_configured', 'true');
+  // };
 
   useEffect(() => {
-    // Set as configured by default since we have a hardcoded API key
-    setIsConfigured(true);
-    
-    const configured = localStorage.getItem('ai_configured');
-    const provider = localStorage.getItem('ai_provider');
-    if (configured === 'true' && provider) {
-      setIsConfigured(true);
-    }
+    // With the API key hardcoded in aiService.ts,
+    // we can simplify this. The app is always 'configured'.
+    // setIsConfigured(true); // Already initialized to true directly in useState
+
+    // REMOVE localStorage handling for API configuration as it's no longer needed
+    // const configured = localStorage.getItem('ai_configured');
+    // const provider = localStorage.getItem('ai_provider');
+    // if (configured === 'true' && provider) {
+    //   setIsConfigured(true);
+    // }
   }, []);
 
   const handleSendMessage = async () => {
@@ -189,7 +189,8 @@ Would you like me to help you with any other symptoms or questions?`;
       <div className="container mx-auto max-w-4xl h-screen flex flex-col">
         <ChatHeader 
           isConfigured={isConfigured}
-          onSettingsClick={() => setShowSettings(true)}
+          // Remove onSettingsClick prop:
+          // onSettingsClick={() => setShowSettings(true)}
         />
 
         <div className="flex-1 bg-white/60 backdrop-blur-sm overflow-hidden">
@@ -220,11 +221,12 @@ Would you like me to help you with any other symptoms or questions?`;
         />
       </div>
 
-      <ApiSettings
+      {/* REMOVE THE APISETTINGS COMPONENT RENDER */}
+      {/* <ApiSettings
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
         onSave={handleApiSettings}
-      />
+      /> */}
     </div>
   );
 };

@@ -22,14 +22,14 @@ export const ChatHeader = ({ isConfigured, onSettingsClick }: ChatHeaderProps) =
             </p>
           </div>
         </div>
-        <Button
+        {/* <Button
           variant="outline"
           size="icon"
           onClick={onSettingsClick}
           className="h-10 w-10"
         >
           <Settings className="w-4 h-4" />
-        </Button>
+        </Button> */}
       </div>
     </div>
   );
