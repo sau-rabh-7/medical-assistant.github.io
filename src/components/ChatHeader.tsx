@@ -16,9 +16,9 @@ export const ChatHeader = ({ isConfigured, onSettingsClick }: ChatHeaderProps) =
             <Bot className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-gray-800">Medical Consultation Assistant</h1>
+            <h1 className="text-xl font-semibold text-gray-800">Medical Bot</h1>
             <p className="text-sm text-gray-600">
-              AI-powered department recommendations {!isConfigured && '(API key required)'}
+              AI-powered Medical Care Consultant {!isConfigured && '(API key required)'}
             </p>
           </div>
         </div>

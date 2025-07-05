@@ -1,73 +1,91 @@
-# Welcome to your Lovable project
+🏥 Medical Consultation AI Assistant
+An AI-powered chatbot designed to provide preliminary guidance on medical symptoms and recommend appropriate medical departments for consultation. It utilizes large language models (LLMs) to analyze user input, including text descriptions and image uploads, offering structured advice with urgency levels and next steps.
 
-## Project info
+Disclaimer: This application is for informational purposes only and does not provide medical diagnosis or treatment. Always consult with a qualified healthcare professional for any medical concerns.
 
-**URL**: https://lovable.dev/projects/5bf95d2b-6783-40c7-961f-ba31596959d6
+✨ Features
+Symptom Analysis: Describe your symptoms in natural language.
 
-## How can I edit this code?
+Image Upload: Upload images for AI analysis (e.g., skin conditions).
 
-There are several ways of editing your application.
+Department Recommendation: Get suggestions for the relevant medical department (e.g., Dermatology, Cardiology).
 
-**Use Lovable**
+Urgency Assessment: Receive an urgency level (low, medium, high, emergency) based on the described symptoms.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/5bf95d2b-6783-40c7-961f-ba31596959d6) and start prompting.
+Practical Next Steps: Get actionable advice on what to do next.
 
-Changes made via Lovable will be committed automatically to this repo.
+AI-Powered Responses: Utilizes Google Gemini (and optionally OpenAI) for intelligent responses.
 
-**Use your preferred IDE**
+Responsive Dark UI: A modern, sleek dark mode interface for comfortable use.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+🚀 Technologies Used
+React: Frontend JavaScript library for building user interfaces.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Vite: Fast build tool for modern web projects.
 
-Follow these steps:
+TypeScript: Type-safe JavaScript.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Tailwind CSS: Utility-first CSS framework for rapid styling.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Lucide React: Icon library for React components.
 
-# Step 3: Install the necessary dependencies.
-npm i
+Shadcn/ui: Reusable UI components built with Radix UI and Tailwind CSS.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+React Router DOM: For client-side routing.
+
+React Query (@tanstack/react-query): For data fetching, caching, and state management.
+
+Google Gemini API: For AI-powered medical consultations.
+
+OpenAI API: (Optional) For AI-powered medical consultations.
+
+⚙️ Setup and Installation
+Clone the repository:
+
+git clone https://github.com/sau-rabh-7/medical-assistant.github.io.git
+cd medical-assistant.github.io
+
+Install dependencies:
+
+npm install
+# OR
+yarn install
+
+API Key Configuration:
+This application uses a hardcoded Google Gemini API key for demonstration purposes. For production use or if you plan to share your code publicly, it is highly recommended to secure your API key using a backend proxy or serverless function.
+The API key is currently located in src/services/aiService.ts.
+
+▶️ How to Run Locally
+Start the development server:
+
 npm run dev
-```
+# OR
+yarn dev
 
-**Edit a file directly in GitHub**
+This will typically open the application in your browser at http://localhost:8080 (or another port).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Preview Production Build (Recommended for accurate local testing):
+To see how the application will behave when deployed (including correct routing for GitHub Pages):
 
-**Use GitHub Codespaces**
+npm run build
+npm run preview
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+The preview server will usually indicate the URL to access, which might be http://localhost:4173/medical-assistant.github.io/ or similar, respecting the base path configured for GitHub Pages.
 
-## What technologies are used for this project?
+🌐 Deployment to GitHub Pages
+This project is configured for deployment to GitHub Pages, specifically for a User/Organization Page repository named medical-assistant.github.io.
 
-This project is built with:
+The vite.config.ts is set with base: '/medical-assistant.github.io/' and BrowserRouter in App.tsx uses basename="/medical-assistant.github.io/" to ensure correct asset loading and routing on GitHub Pages.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+To deploy:
 
-## How can I deploy this project?
+Ensure your vite.config.ts and App.tsx have the correct base and basename paths as mentioned above.
 
-Simply open [Lovable](https://lovable.dev/projects/5bf95d2b-6783-40c7-961f-ba31596959d6) and click on Share -> Publish.
+Build your project: npm run build
 
-## Can I connect a custom domain to my Lovable project?
+Push your gh-pages branch (containing the dist folder content) to your medical-assistant.github.io repository.
 
-Yes, you can!
+Your application should be accessible at https://medical-assistant.github.io/.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+⚠️ Important Disclaimer
+This Medical Consultation AI Assistant is designed to provide general information and preliminary guidance based on the input provided. It is powered by artificial intelligence and is NOT a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of a qualified healthcare professional for any medical questions or concerns. In case of a medical emergency, call emergency services immediately.
