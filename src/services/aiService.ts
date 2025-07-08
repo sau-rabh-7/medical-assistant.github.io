@@ -1,4 +1,4 @@
-// aiService.ts (Updated)
+// src/services/aiService.ts
 
 interface MedicalResponse {
   department: string;
@@ -38,85 +38,32 @@ Guidelines for medical responses:
 User's message: `;
 
 export class AIService {
-  private provider: 'openai' | 'gemini' = 'gemini';
-  // WARNING: Hardcoding API key directly in client-side code is a security risk.
+  // Hardcoded to 'gemini' as it's the only provider now
+  private provider: 'gemini' = 'gemini'; 
+  
+  // WARNING: Hardcoding API key directly in client-side code is a severe security risk.
   // This key will be visible to anyone inspecting your deployed website's source code.
-  private apiKey: string = 'AIzaSyCtOzbIl0QGADIQky0hS0KN-qGfoULchMo';
+  // For production, use a secure backend proxy or environment variables.
+  private apiKey: string = 'AIzaSyCtOzbIl0QGADIQky0hS0KN-qGfoULchMo'; // Your provided Gemini API Key
 
-  setProvider(provider: 'openai' | 'gemini', apiKey: string) {
-    this.provider = provider;
-    this.apiKey = apiKey;
-  }
+  // Removed setProvider method as the provider and key are now hardcoded
 
   async generateMedicalResponse(symptoms: string, imageData?: string): Promise<MedicalResponse | string> {
     if (!this.apiKey) {
+      // This check is mostly for safety, as the key is now hardcoded.
       throw new Error('API key not configured');
     }
 
     try {
-      if (this.provider === 'openai') {
-        return await this.callOpenAI(symptoms, imageData);
-      } else {
-        return await this.callGemini(symptoms, imageData);
-      }
+      // Directly call callGemini as OpenAI is removed
+      return await this.callGemini(symptoms, imageData);
     } catch (error) {
-      console.error('AI API Error:', error);
-      throw new Error('Failed to get AI response. Please check your API key and try again.');
+      console.error('Gemini API Error:', error);
+      throw new Error('Failed to get Gemini AI response. Please check your API key and try again.');
     }
   }
 
-  private async callOpenAI(symptoms: string, imageData?: string): Promise<MedicalResponse | string> {
-    const messages: any[] = [
-      {
-        role: 'system',
-        content: MEDICAL_PROMPT // Use the detailed prompt for the system role
-      }
-    ];
-
-    if (imageData) {
-      messages.push({
-        role: 'user',
-        content: [
-          { type: 'text', text: symptoms },
-          { type: 'image_url', image_url: { url: imageData } }
-        ]
-      });
-    } else {
-      messages.push({
-        role: 'user',
-        content: symptoms
-      });
-    }
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o', // Make sure this model supports JSON mode if you were aiming for it
-        messages,
-        max_tokens: 1000,
-        temperature: 0.3,
-        // Optional: If 'gpt-4o' supports JSON response mode, add it.
-        // For example, for gpt-3.5-turbo-1106 and newer, you could use:
-        // response_format: { type: "json_object" }
-        // However, your prompt already guides it strongly.
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("OpenAI API full error:", errorData);
-      throw new Error(`OpenAI API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices[0]?.message?.content;
-    
-    return this.parseAIResponse(content); // Use the new parsing method
-  }
+  // Removed callOpenAI method
 
   private async callGemini(symptoms: string, imageData?: string): Promise<MedicalResponse | string> {
     const parts: any[] = [{ text: MEDICAL_PROMPT + symptoms }];
@@ -126,8 +73,7 @@ export class AIService {
       const base64Data = imageData.split(',')[1];
       parts.push({
         inlineData: {
-          // Adjust mimeType if you're uploading PNGs or other formats
-          mimeType: 'image/jpeg', 
+          mimeType: 'image/jpeg', // Ensure this matches the actual image type if possible
           data: base64Data
         }
       });
@@ -145,8 +91,6 @@ export class AIService {
         generationConfig: {
           temperature: 0.3,
           maxOutputTokens: 1000,
-          // Gemini's response_mime_type can be set for stricter JSON output
-          // output_config: { response_mime_type: "application/json" } // For Gemini 1.5 Pro and Flash
         }
       }),
     });
@@ -160,10 +104,15 @@ export class AIService {
     const data = await response.json();
     const content = data.candidates[0]?.content?.parts[0]?.text;
     
-    return this.parseAIResponse(content); // Use the new parsing method
+    return this.parseAIResponse(content);
   }
 
-  // --- NEW PRIVATE METHOD TO PARSE AI RESPONSE ---
+  /**
+   * Attempts to parse a structured JSON response from the AI's raw text output.
+   * Handles cases where JSON might be wrapped in markdown code blocks or interspersed with other text.
+   * @param content The raw string content from the AI.
+   * @returns A MedicalResponse object if valid JSON is found and parsed, otherwise the original string content.
+   */
   private parseAIResponse(content: string): MedicalResponse | string {
     if (!content) {
         return this.parseFallbackResponse("No content received from AI.");
@@ -183,9 +132,6 @@ export class AIService {
     }
 
     // 2. Try to find standalone JSON object (e.g., { ... })
-    // This regex looks for a string starting with '{' and ending with '}'
-    // and tries to extract the content between the first '{' and last '}'
-    // This is a bit more aggressive and might pick up partial JSON if not careful.
     const potentialJsonMatch = content.match(/\{[\s\S]*\}/);
     if (potentialJsonMatch && potentialJsonMatch[0]) {
         try {
@@ -199,7 +145,6 @@ export class AIService {
     }
 
     // 3. If no valid JSON is found or parsed, return the original content as plain text
-    // This means general greetings or cases where the AI completely failed to adhere to JSON.
     return content;
   }
 
