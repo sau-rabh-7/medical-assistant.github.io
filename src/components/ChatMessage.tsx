@@ -1,4 +1,4 @@
-import { Bot, User, RefreshCcw, Copy, Check } from 'lucide-react';
+import { Bot, User, RefreshCcw, Copy, Check, Stethoscope } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -58,7 +58,7 @@ export const ChatMessage = ({ message, onRegenerate }: ChatMessageProps) => {
     <div className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
       {message.type === 'bot' && (
         <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-          <Bot className="w-4 h-4 text-white" />
+          <Stethoscope className="w-4 h-4 text-white" />
         </div>
       )}
       
@@ -82,13 +82,8 @@ export const ChatMessage = ({ message, onRegenerate }: ChatMessageProps) => {
             {message.type === 'bot' ? (
               // For bot messages, render Markdown and HTML
               <ReactMarkdown
-                remarkPlugins={[remarkGfm]} // Adds support for GitHub Flavored Markdown
-                rehypePlugins={[rehypeRaw]} // Crucial for rendering raw HTML tags like <span>
-                // Add Tailwind's Typography plugin if you want better default styling for markdown elements
-                // like headings, lists, etc. in 'prose' class. If not, you'll need custom CSS.
-                // You might need to add `@tailwindcss/typography` to your tailwind.config.js
-                // and install it: npm install -D @tailwindcss/typography
-                className="prose prose-sm max-w-none" // Tailwind Typography classes
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeRaw]}
               >
                 {message.content}
               </ReactMarkdown>
