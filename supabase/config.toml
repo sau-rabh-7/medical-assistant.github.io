@@ -1,1 +1,4 @@
 project_id = "kvlyqvohvgugwyhssxjy"
+
+[functions.medical-consultation]
+verify_jwt = false
