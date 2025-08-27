@@ -19,6 +19,7 @@ interface Patient {
 }
 
 const Dashboard = () => {
+  console.log('Dashboard component rendering...');
   const navigate = useNavigate();
   const { user, signOut, loading } = useAuth();
   const [patients, setPatients] = useState<Patient[]>([]);
