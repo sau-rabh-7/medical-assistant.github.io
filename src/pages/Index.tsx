@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { LogOut, Users, Stethoscope } from 'lucide-react';
+import { LogOut, Users, Stethoscope, Plus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { PatientCard } from '@/components/PatientCard';
 import { AddPatientDialog } from '@/components/AddPatientDialog';
+import { PatientSearch } from '@/components/PatientSearch';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -15,6 +16,7 @@ interface Patient {
   age?: number;
   sex?: string;
   blood_group?: string;
+  patient_id?: string;
   created_at: string;
 }
 
@@ -23,7 +25,9 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { user, signOut, loading } = useAuth();
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [loadingPatients, setLoadingPatients] = useState(true);
+  const [isAddPatientOpen, setIsAddPatientOpen] = useState(false);
 
   useEffect(() => {
     if (loading) return;
@@ -42,7 +46,7 @@ const Dashboard = () => {
     setLoadingPatients(true);
     const { data, error } = await supabase
       .from('patients')
-      .select('id, name, age, sex, blood_group, created_at')
+      .select('id, name, age, sex, blood_group, patient_id, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
@@ -54,6 +58,7 @@ const Dashboard = () => {
       });
     } else {
       setPatients(data || []);
+      setFilteredPatients(data || []);
     }
     setLoadingPatients(false);
   };
@@ -122,15 +127,29 @@ const Dashboard = () => {
           </Button>
         </div>
 
-        {/* Patients Section */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-2">
-              <Users className="w-5 h-5 text-primary" />
-              <h2 className="text-xl font-semibold text-foreground">Your Patients</h2>
+        {/* Main Content */}
+        <div className="space-y-6 mb-8">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Medical Dashboard</h1>
+              <p className="text-muted-foreground mt-2">Manage your patients and consultations</p>
             </div>
-            <AddPatientDialog onPatientAdded={fetchPatients} />
+            <Button onClick={() => setIsAddPatientOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Patient
+            </Button>
           </div>
+          
+          <div className="flex justify-between items-center">
+            <PatientSearch 
+              patients={patients} 
+              onFilteredPatientsChange={setFilteredPatients}
+            />
+            <div className="text-sm text-muted-foreground">
+              {filteredPatients.length} of {patients.length} patients
+            </div>
+          </div>
+        </div>
 
           {loadingPatients ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -146,18 +165,30 @@ const Dashboard = () => {
                 </Card>
               ))}
             </div>
-          ) : patients.length === 0 ? (
-            <Card className="p-8 text-center">
-              <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">No Patients Yet</h3>
-              <p className="text-muted-foreground mb-4">
-                Add your first patient to start medical consultations
-              </p>
-              <AddPatientDialog onPatientAdded={fetchPatients} />
-            </Card>
+          ) : filteredPatients.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="w-8 h-8 text-muted-foreground" />
+              </div>
+              {patients.length === 0 ? (
+                <>
+                  <h3 className="text-lg font-semibold mb-2">No patients yet</h3>
+                  <p className="text-muted-foreground mb-4">Add your first patient to get started</p>
+                  <Button onClick={() => setIsAddPatientOpen(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Patient
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-lg font-semibold mb-2">No matching patients</h3>
+                  <p className="text-muted-foreground">Try adjusting your search terms</p>
+                </>
+              )}
+            </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {patients.map((patient) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredPatients.map((patient) => (
                 <PatientCard
                   key={patient.id}
                   patient={patient}
@@ -166,7 +197,15 @@ const Dashboard = () => {
               ))}
             </div>
           )}
-        </div>
+        
+        <AddPatientDialog
+          open={isAddPatientOpen}
+          onOpenChange={setIsAddPatientOpen}
+          onPatientAdded={() => {
+            fetchPatients();
+            setIsAddPatientOpen(false);
+          }}
+        />
       </div>
     </div>
   );

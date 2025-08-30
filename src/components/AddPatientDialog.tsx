@@ -11,12 +11,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
 interface AddPatientDialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onPatientAdded: () => void;
 }
 
-export const AddPatientDialog = ({ onPatientAdded }: AddPatientDialogProps) => {
+export const AddPatientDialog = ({ open: externalOpen, onOpenChange: externalOnOpenChange, onPatientAdded }: AddPatientDialogProps) => {
   const { user } = useAuth();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(externalOpen || false);
   const [loading, setLoading] = useState(false);
   const [patientData, setPatientData] = useState({
     name: '',
@@ -40,18 +42,18 @@ export const AddPatientDialog = ({ onPatientAdded }: AddPatientDialogProps) => {
 
     const { error } = await supabase
       .from('patients')
-      .insert({
+      .insert([{
         user_id: user.id,
         name: patientData.name,
-        age: patientData.age ? parseInt(patientData.age) : null,
-        sex: patientData.sex || null,
-        blood_group: patientData.blood_group || null,
-        medical_history: patientData.medical_history || null,
-        allergies: patientData.allergies || null,
-        current_medications: patientData.current_medications || null,
-        recent_operations: patientData.recent_operations || null,
-        emergency_contact: patientData.emergency_contact || null
-      });
+        ...(patientData.age && { age: parseInt(patientData.age) }),
+        ...(patientData.sex && { sex: patientData.sex }),
+        ...(patientData.blood_group && { blood_group: patientData.blood_group }),
+        ...(patientData.medical_history && { medical_history: patientData.medical_history }),
+        ...(patientData.allergies && { allergies: patientData.allergies }),
+        ...(patientData.current_medications && { current_medications: patientData.current_medications }),
+        ...(patientData.recent_operations && { recent_operations: patientData.recent_operations }),
+        ...(patientData.emergency_contact && { emergency_contact: patientData.emergency_contact })
+      }]);
 
     if (error) {
       toast({
@@ -83,7 +85,7 @@ export const AddPatientDialog = ({ onPatientAdded }: AddPatientDialogProps) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={externalOpen !== undefined ? externalOpen : open} onOpenChange={externalOnOpenChange || setOpen}>
       <DialogTrigger asChild>
         <Button className="flex items-center space-x-2">
           <Plus className="w-4 h-4" />
