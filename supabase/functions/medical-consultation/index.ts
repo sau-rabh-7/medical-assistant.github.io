@@ -51,29 +51,29 @@ Please provide a comprehensive response that includes:
 
 Please respond in a warm, professional manner as you would during an in-person consultation.`;
 
-    // Use Hugging Face's medical model
-    const response = await fetch(
-      "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium",
-      {
-        headers: {
-          "Authorization": `Bearer ${Deno.env.get('HUGGINGFACE_API_KEY')}`,
-          "Content-Type": "application/json",
-        },
-        method: "POST",
-        body: JSON.stringify({
-          inputs: prompt,
-          parameters: {
-            max_new_tokens: 1000,
-            temperature: 0.7,
-            do_sample: true,
-            return_full_text: false
-          }
-        }),
-      }
-    );
+    // Use OpenAI GPT for better medical responses
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { 
+            role: 'system', 
+            content: 'You are Dr. AI, a compassionate and knowledgeable medical professional. Provide thoughtful medical consultations while emphasizing the importance of in-person medical care for proper diagnosis.' 
+          },
+          { role: 'user', content: prompt }
+        ],
+        max_tokens: 1000,
+        temperature: 0.7,
+      }),
+    });
 
     if (!response.ok) {
-      console.error('HuggingFace API error:', response.status, response.statusText);
+      console.error('OpenAI API error:', response.status, response.statusText);
       
       // Fallback response if API fails
       const fallbackResponse = `I understand you're experiencing: ${symptoms}
@@ -105,11 +105,11 @@ Is there anything specific about your symptoms you'd like me to explain further?
     }
 
     const data = await response.json();
-    console.log('HuggingFace response:', data);
+    console.log('OpenAI response:', data);
 
     let aiResponse = '';
-    if (Array.isArray(data) && data.length > 0 && data[0].generated_text) {
-      aiResponse = data[0].generated_text;
+    if (data.choices && data.choices.length > 0 && data.choices[0].message) {
+      aiResponse = data.choices[0].message.content;
     } else {
       // Enhanced fallback with patient context
       aiResponse = `Thank you for sharing your symptoms with me. I understand you're experiencing: ${symptoms}

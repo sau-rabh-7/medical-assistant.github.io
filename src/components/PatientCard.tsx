@@ -8,6 +8,7 @@ interface Patient {
   age?: number;
   sex?: string;
   blood_group?: string;
+  patient_id?: string;
   created_at: string;
 }
 
@@ -26,6 +27,9 @@ export const PatientCard = ({ patient, onStartChat }: PatientCardProps) => {
           </div>
           <div>
             <h3 className="font-semibold text-foreground">{patient.name}</h3>
+            {patient.patient_id && (
+              <p className="text-xs text-muted-foreground font-mono">{patient.patient_id}</p>
+            )}
             <div className="flex items-center space-x-4 text-sm text-muted-foreground mt-1">
               {patient.age && (
                 <div className="flex items-center space-x-1">
