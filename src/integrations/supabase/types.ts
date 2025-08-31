@@ -111,7 +111,7 @@ export type Database = {
           id?: string
           medical_history?: string | null
           name: string
-          patient_id: string
+          patient_id?: string
           recent_operations?: string | null
           sex?: string | null
           updated_at?: string

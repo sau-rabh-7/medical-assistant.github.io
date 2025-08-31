@@ -79,9 +79,9 @@ const ChatPage = () => {
       .select('*')
       .eq('id', patientId)
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
-    if (patientError) {
+    if (patientError || !patientData) {
       toast({
         title: "Error",
         description: "Failed to load patient information",

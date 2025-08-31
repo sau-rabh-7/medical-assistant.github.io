@@ -40,20 +40,22 @@ export const AddPatientDialog = ({ open: externalOpen, onOpenChange: externalOnO
 
     setLoading(true);
 
+    const insertData = {
+      user_id: user.id,
+      name: patientData.name,
+      ...(patientData.age && { age: parseInt(patientData.age) }),
+      ...(patientData.sex && { sex: patientData.sex }),
+      ...(patientData.blood_group && { blood_group: patientData.blood_group }),
+      ...(patientData.medical_history && { medical_history: patientData.medical_history }),
+      ...(patientData.allergies && { allergies: patientData.allergies }),
+      ...(patientData.current_medications && { current_medications: patientData.current_medications }),
+      ...(patientData.recent_operations && { recent_operations: patientData.recent_operations }),
+      ...(patientData.emergency_contact && { emergency_contact: patientData.emergency_contact })
+    };
+
     const { error } = await supabase
       .from('patients')
-      .insert([{
-        user_id: user.id,
-        name: patientData.name,
-        ...(patientData.age && { age: parseInt(patientData.age) }),
-        ...(patientData.sex && { sex: patientData.sex }),
-        ...(patientData.blood_group && { blood_group: patientData.blood_group }),
-        ...(patientData.medical_history && { medical_history: patientData.medical_history }),
-        ...(patientData.allergies && { allergies: patientData.allergies }),
-        ...(patientData.current_medications && { current_medications: patientData.current_medications }),
-        ...(patientData.recent_operations && { recent_operations: patientData.recent_operations }),
-        ...(patientData.emergency_contact && { emergency_contact: patientData.emergency_contact })
-      }]);
+      .insert(insertData as any);
 
     if (error) {
       toast({
