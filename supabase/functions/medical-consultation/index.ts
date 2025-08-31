@@ -35,59 +35,70 @@ serve(async (req) => {
 Patient says: ${symptoms}`;
     }
 
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    const huggingfaceApiKey = Deno.env.get('HUGGINGFACE_API_KEY');
     
-    if (!openaiApiKey) {
-      console.error('OPENAI_API_KEY not found in environment variables');
-      throw new Error('OpenAI API key not configured');
+    if (!huggingfaceApiKey) {
+      console.error('HUGGINGFACE_API_KEY not found in environment variables');
+      throw new Error('Hugging Face API key not configured');
     }
 
-    // Use OpenAI GPT for natural medical responses
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { 
-            role: 'system', 
-            content: `You are Dr. AI, a compassionate and knowledgeable medical professional. You should:
+    // Use Hugging Face's free medical model
+    const response = await fetch(
+      "https://api-inference.huggingface.co/models/microsoft/BioGPT-Large",
+      {
+        headers: {
+          "Authorization": `Bearer ${huggingfaceApiKey}`,
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+        body: JSON.stringify({
+          inputs: `You are Dr. AI, a medical professional. Respond naturally to patients. If someone says "hi" or similar greetings, respond warmly and ask what brings them in today.
 
-1. Respond naturally and conversationally like a real doctor would
-2. Ask follow-up questions when you need more information to help diagnose
-3. Be empathetic and reassuring while being medically accurate
-4. Consider the patient's medical history and context when provided
-5. Always remind patients that this is not a substitute for in-person medical examination
-6. If the input is just a greeting (like "hi", "hello"), respond warmly and ask what brings them in today
-7. Be thorough but not overly formal - speak like a caring doctor would
+${prompt}
 
-Do NOT use structured formats or templates. Respond naturally as if you're having a conversation with a patient in your office.`
+Response:`,
+          parameters: {
+            max_new_tokens: 500,
+            temperature: 0.7,
+            do_sample: true,
+            return_full_text: false
           },
-          { role: 'user', content: prompt }
-        ],
-        max_tokens: 800,
-        temperature: 0.8,
-      }),
-    });
+          options: {
+            wait_for_model: true
+          }
+        }),
+      }
+    );
 
     if (!response.ok) {
+      console.error('Hugging Face API error:', response.status, response.statusText);
       const errorText = await response.text();
-      console.error('OpenAI API error:', response.status, response.statusText, errorText);
-      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+      console.error('Error details:', errorText);
+      throw new Error(`Hugging Face API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
-    console.log('OpenAI response received successfully');
+    console.log('Hugging Face response received successfully');
 
     let aiResponse = '';
-    if (data.choices && data.choices.length > 0 && data.choices[0].message && data.choices[0].message.content) {
-      aiResponse = data.choices[0].message.content.trim();
+    if (Array.isArray(data) && data.length > 0 && data[0].generated_text) {
+      aiResponse = data[0].generated_text.trim();
+      
+      // Clean up the response if it contains the prompt
+      if (aiResponse.includes('Response:')) {
+        aiResponse = aiResponse.split('Response:')[1]?.trim() || aiResponse;
+      }
     } else {
-      console.error('Unexpected OpenAI response format:', data);
-      throw new Error('Unexpected response format from OpenAI');
+      console.error('Unexpected Hugging Face response format:', data);
+      
+      // Provide a natural fallback response based on the input
+      if (symptoms.toLowerCase().includes('hi') || symptoms.toLowerCase().includes('hello')) {
+        aiResponse = `Hello! Welcome to our medical consultation. I'm Dr. AI, and I'm here to help you today. What brings you in? Please describe any symptoms or health concerns you'd like to discuss.`;
+      } else {
+        aiResponse = `Thank you for sharing that with me. To provide you with the best possible guidance, could you tell me more about what you're experiencing? When did these symptoms start, and how severe would you rate them on a scale of 1-10?
+
+Please remember that while I can provide general medical guidance, this consultation doesn't replace an in-person examination with a healthcare provider. For serious or emergency symptoms, please seek immediate medical attention.`;
+      }
     }
 
     return new Response(JSON.stringify({ response: aiResponse }), {
