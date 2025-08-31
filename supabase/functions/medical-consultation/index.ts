@@ -17,45 +17,36 @@ serve(async (req) => {
     
     console.log('Received request:', { symptoms, patientContext: !!patientContext, hasImage: !!imageData });
 
-    // Build the medical consultation prompt
-    let prompt = `You are Dr. AI, a compassionate and knowledgeable medical professional. Please provide a thoughtful medical consultation based on the following information:
-
-**Patient Context:**
-${patientContext ? `
+    // Create a natural, conversational prompt for the AI
+    let prompt = symptoms;
+    
+    // Add patient context if available
+    if (patientContext) {
+      prompt = `Patient Information:
 - Name: ${patientContext.name}
 - Age: ${patientContext.age || 'Not specified'}
 - Sex: ${patientContext.sex || 'Not specified'}
 - Blood Group: ${patientContext.blood_group || 'Not specified'}
 - Medical History: ${patientContext.medical_history || 'None provided'}
-- Known Allergies: ${patientContext.allergies || 'None provided'}
+- Allergies: ${patientContext.allergies || 'None provided'}
 - Current Medications: ${patientContext.current_medications || 'None provided'}
 - Recent Operations: ${patientContext.recent_operations || 'None provided'}
-` : 'No patient context available'}
 
-**Current Symptoms/Concern:**
-${symptoms}
+Patient says: ${symptoms}`;
+    }
 
-Please provide a comprehensive response that includes:
-1. **Assessment**: Your professional interpretation of the symptoms
-2. **Possible Conditions**: What conditions might explain these symptoms (from most to least likely)
-3. **Immediate Recommendations**: What the patient should do right now
-4. **When to Seek Care**: Guidelines for when to seek emergency, urgent, or routine care
-5. **General Advice**: Lifestyle recommendations and monitoring suggestions
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    
+    if (!openaiApiKey) {
+      console.error('OPENAI_API_KEY not found in environment variables');
+      throw new Error('OpenAI API key not configured');
+    }
 
-**Important Notes:**
-- Always acknowledge the limitations of remote consultation
-- Recommend in-person evaluation when appropriate
-- Consider the patient's medical history and current medications in your assessment
-- Provide clear, easy-to-understand explanations
-- Be empathetic and reassuring while being medically accurate
-
-Please respond in a warm, professional manner as you would during an in-person consultation.`;
-
-    // Use OpenAI GPT for better medical responses
+    // Use OpenAI GPT for natural medical responses
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -63,86 +54,40 @@ Please respond in a warm, professional manner as you would during an in-person c
         messages: [
           { 
             role: 'system', 
-            content: 'You are Dr. AI, a compassionate and knowledgeable medical professional. Provide thoughtful medical consultations while emphasizing the importance of in-person medical care for proper diagnosis.' 
+            content: `You are Dr. AI, a compassionate and knowledgeable medical professional. You should:
+
+1. Respond naturally and conversationally like a real doctor would
+2. Ask follow-up questions when you need more information to help diagnose
+3. Be empathetic and reassuring while being medically accurate
+4. Consider the patient's medical history and context when provided
+5. Always remind patients that this is not a substitute for in-person medical examination
+6. If the input is just a greeting (like "hi", "hello"), respond warmly and ask what brings them in today
+7. Be thorough but not overly formal - speak like a caring doctor would
+
+Do NOT use structured formats or templates. Respond naturally as if you're having a conversation with a patient in your office.`
           },
           { role: 'user', content: prompt }
         ],
-        max_tokens: 1000,
-        temperature: 0.7,
+        max_tokens: 800,
+        temperature: 0.8,
       }),
     });
 
     if (!response.ok) {
-      console.error('OpenAI API error:', response.status, response.statusText);
-      
-      // Fallback response if API fails
-      const fallbackResponse = `I understand you're experiencing: ${symptoms}
-
-As a medical AI assistant, I want to help you understand your symptoms and guide you toward appropriate care.
-
-**My Assessment:**
-Based on what you've described, these symptoms could have several possible explanations. ${patientContext ? `Given your medical history and current medications, ` : ''}I recommend we consider both common and more serious possibilities.
-
-**Immediate Recommendations:**
-1. Monitor your symptoms closely
-2. Stay hydrated and get adequate rest
-3. Take note of any changes or worsening symptoms
-4. Consider your pain level and overall well-being
-
-**When to Seek Care:**
-- **Seek emergency care immediately** if you experience severe pain, difficulty breathing, chest pain, or any symptoms that feel life-threatening
-- **Contact your doctor today** if symptoms are moderate and concerning
-- **Schedule a routine appointment** if symptoms are mild but persistent
-
-**Important Reminder:**
-While I can provide general guidance, this virtual consultation cannot replace a proper in-person medical examination. Please consider seeing a healthcare provider who can perform a physical examination and order appropriate tests if needed.
-
-Is there anything specific about your symptoms you'd like me to explain further?`;
-
-      return new Response(JSON.stringify({ response: fallbackResponse }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      const errorText = await response.text();
+      console.error('OpenAI API error:', response.status, response.statusText, errorText);
+      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
-    console.log('OpenAI response:', data);
+    console.log('OpenAI response received successfully');
 
     let aiResponse = '';
-    if (data.choices && data.choices.length > 0 && data.choices[0].message) {
-      aiResponse = data.choices[0].message.content;
+    if (data.choices && data.choices.length > 0 && data.choices[0].message && data.choices[0].message.content) {
+      aiResponse = data.choices[0].message.content.trim();
     } else {
-      // Enhanced fallback with patient context
-      aiResponse = `Thank you for sharing your symptoms with me. I understand you're experiencing: ${symptoms}
-
-${patientContext ? `Based on your medical profile:
-- I see you're ${patientContext.age ? `${patientContext.age} years old` : 'an adult patient'}
-- ${patientContext.medical_history ? `Your medical history includes: ${patientContext.medical_history}` : 'No significant medical history noted'}
-- ${patientContext.current_medications ? `You're currently taking: ${patientContext.current_medications}` : 'No current medications listed'}
-- ${patientContext.allergies ? `I note your allergies to: ${patientContext.allergies}` : 'No known allergies on file'}
-
-` : ''}**My Clinical Assessment:**
-Your symptoms warrant careful evaluation. While I can provide guidance, a proper medical assessment requires physical examination and possibly diagnostic tests.
-
-**Possible Considerations:**
-The symptoms you're describing could be related to various conditions. Without being able to examine you directly, I'd recommend considering both common causes and ruling out more serious possibilities.
-
-**My Recommendations:**
-1. **Immediate care**: Monitor symptoms closely and note any changes
-2. **Symptom tracking**: Keep a record of when symptoms occur and their severity
-3. **Lifestyle measures**: Ensure adequate rest, hydration, and nutrition
-4. **Medical evaluation**: I strongly recommend scheduling an appointment with your healthcare provider
-
-**When to Seek Urgent Care:**
-Please seek immediate medical attention if you experience:
-- Severe or worsening symptoms
-- Difficulty breathing or chest pain
-- High fever or signs of infection
-- Any symptoms that feel concerning or life-threatening
-
-**Follow-up:**
-Your health and peace of mind are important. Even if symptoms seem manageable, having them properly evaluated by a healthcare provider who can examine you in person is always the wisest course of action.
-
-Is there anything specific about your symptoms or my recommendations you'd like me to clarify?`;
+      console.error('Unexpected OpenAI response format:', data);
+      throw new Error('Unexpected response format from OpenAI');
     }
 
     return new Response(JSON.stringify({ response: aiResponse }), {
@@ -151,17 +96,14 @@ Is there anything specific about your symptoms or my recommendations you'd like 
 
   } catch (error) {
     console.error('Error in medical-consultation function:', error);
+    
+    // Simple fallback that lets the user know there's an issue
+    const fallbackResponse = `I apologize, but I'm having some technical difficulties right now. Could you please try again in a moment? If this continues, please contact your healthcare provider directly for any urgent medical concerns.`;
+    
     return new Response(JSON.stringify({ 
-      error: 'Internal server error',
-      response: `I apologize, but I'm experiencing technical difficulties right now. For your safety and to ensure you receive proper medical care, please consider:
-
-1. **If this is urgent**: Contact your healthcare provider directly or visit an urgent care center
-2. **If this is non-urgent**: Try again in a few minutes, or schedule an appointment with your doctor
-3. **For emergencies**: Always call emergency services or go to the nearest emergency room
-
-Your health is the priority, and in-person medical care is always the gold standard for proper diagnosis and treatment.`
+      response: fallbackResponse 
     }), {
-      status: 500,
+      status: 200, // Return 200 so the client gets the fallback message
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

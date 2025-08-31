@@ -66,27 +66,48 @@ const Dashboard = () => {
   const handleStartChat = async (patientId: string) => {
     if (!user) return;
 
-    // Create a new chat session for this patient
-    const { data, error } = await supabase
+    // First check if there's an existing chat session for this patient
+    const { data: existingSession, error: sessionError } = await supabase
       .from('chat_sessions')
-      .insert({
-        user_id: user.id,
-        patient_id: patientId,
-        title: 'New Consultation'
-      })
       .select('id')
-      .single();
+      .eq('user_id', user.id)
+      .eq('patient_id', patientId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to start chat session",
-        variant: "destructive"
-      });
-    } else {
-      // Navigate to chat page with session ID and patient ID
-      navigate(`/chat/${data.id}?patient=${patientId}`);
+    if (sessionError) {
+      console.error('Error checking existing sessions:', sessionError);
     }
+
+    let sessionId = existingSession?.id;
+
+    // If no existing session, create a new one
+    if (!sessionId) {
+      const { data: newSession, error: createError } = await supabase
+        .from('chat_sessions')
+        .insert({
+          user_id: user.id,
+          patient_id: patientId,
+          title: 'Medical Consultation'
+        })
+        .select('id')
+        .single();
+
+      if (createError) {
+        toast({
+          title: "Error",
+          description: "Failed to start chat session",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      sessionId = newSession.id;
+    }
+
+    // Navigate to chat page with session ID and patient ID
+    navigate(`/chat/${sessionId}?patient=${patientId}`);
   };
 
   const handleSignOut = async () => {

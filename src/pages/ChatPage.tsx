@@ -117,12 +117,12 @@ const ChatPage = () => {
       setMessages(formattedMessages);
     }
 
-    // Add welcome message if no messages exist
+    // Only add welcome message if this is a completely new chat session with no messages
     if (!messagesData || messagesData.length === 0) {
       const welcomeMessage: Message = {
         id: 'welcome',
         type: 'doctor',
-        content: `Hello! I'm Dr. AI, and I'll be assisting with ${patientData.name}'s consultation today. I have access to their medical profile and am ready to help with any symptoms or health concerns. Please describe what's troubling ${patientData.name} today.`,
+        content: `Hello! I'm Dr. AI, and I'll be assisting with ${patientData.name}'s consultation today. I have access to their medical profile and am ready to help with any symptoms or health concerns. What brings ${patientData.name} in today?`,
         timestamp: new Date()
       };
       setMessages([welcomeMessage]);
