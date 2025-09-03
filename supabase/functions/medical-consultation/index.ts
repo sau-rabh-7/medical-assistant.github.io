@@ -9,20 +9,20 @@ const corsHeaders = {
 const generateMedicalResponse = (symptoms: string, patientContext?: any) => {
   const responses = {
     headache: [
-      "I understand you're experiencing a headache. Common causes include tension, dehydration, lack of sleep, or stress. Try resting in a quiet, dark room, staying hydrated, and consider over-the-counter pain relief if appropriate.",
-      "For your headache, I recommend monitoring the frequency and intensity. If headaches become severe, frequent, or are accompanied by other symptoms like fever, vision changes, or neck stiffness, please consult a healthcare provider immediately."
+      `${patientContext?.name ? `Hi ${patientContext.name}, ` : 'Hello, '}I see you're dealing with a headache. These can be quite uncomfortable. From what you're describing, it could be tension-related, especially if you've been under stress lately, or it might be due to dehydration or lack of sleep. Have you been drinking enough water today? I'd suggest finding a quiet, dark room to rest in for a bit. A cool compress on your forehead might help too. If you have some ibuprofen or acetaminophen at home, that could provide relief, but make sure to follow the dosage instructions.`,
+      `Now, I want you to keep an eye on this headache. If it becomes severe, happens frequently, or if you notice any changes in your vision, neck stiffness, or develop a fever along with it, I'd want you to see a doctor right away. Those could be signs of something more serious that needs immediate attention.`
     ],
     fever: [
-      "Fever can indicate your body is fighting an infection. Make sure to stay hydrated, rest, and monitor your temperature. If fever exceeds 103°F (39.4°C) or persists for more than 3 days, seek medical attention.",
-      "Along with rest and hydration, you can use fever-reducing medications as directed. Watch for warning signs like difficulty breathing, severe headache, or persistent vomiting."
+      `${patientContext?.name ? `${patientContext.name}, ` : ''}a fever tells me your body is working hard to fight off something, likely an infection. That's actually a good sign that your immune system is doing its job. Right now, focus on staying well-hydrated - water, herbal teas, or clear broths are all good choices. Rest is crucial too, so don't feel guilty about taking it easy. You can use fever reducers like acetaminophen or ibuprofen to help you feel more comfortable, but don't feel like you have to bring the fever down completely.`,
+      `I do want you to monitor your temperature though. If it climbs above 103°F or stays elevated for more than three days, that's when I'd want you to come in. Also, watch for any trouble breathing, severe headache, or persistent vomiting - those would be reasons to seek care sooner rather than later.`
     ],
     cough: [
-      "A cough can be due to various causes including viral infections, allergies, or irritants. Stay hydrated, consider honey for throat soothing, and avoid smoke or strong odors.",
-      "If your cough persists for more than 2 weeks, produces blood, or is accompanied by fever and difficulty breathing, please consult a healthcare provider."
+      `${patientContext?.name ? `I hear you, ${patientContext.name}, ` : ''}coughs can be really annoying, can't they? There are several things that could be causing this - it might be a viral infection, allergies acting up, or even just irritation from dry air or strong smells. For now, try to stay hydrated as it helps thin any mucus. A spoonful of honey can be surprisingly effective for soothing your throat, and warm tea with lemon might feel good too. If the air in your home is dry, a humidifier could help.`,
+      `Keep track of how long this cough lasts. If it's still bothering you after two weeks, or if you start coughing up blood, or develop fever and difficulty breathing along with it, those are signals that we need to take a closer look at what's going on.`
     ],
     "stomach pain": [
-      "Stomach pain can have many causes. Try to identify if it's related to eating, stress, or other factors. Avoid spicy, fatty, or acidic foods and consider small, bland meals.",
-      "Monitor the pain's location, intensity, and duration. Seek immediate care if you experience severe pain, vomiting blood, or signs of dehydration."
+      `${patientContext?.name ? `${patientContext.name}, ` : ''}stomach pain can have so many different causes, and I know how uncomfortable it can be. Think about when it started - was it after eating something specific? Are you feeling stressed? Sometimes our digestive system really responds to what's going on in our lives. For now, try sticking to bland, easy-to-digest foods like toast, rice, or bananas. Avoid anything spicy, greasy, or acidic for a day or two.`,
+      `Pay attention to where exactly the pain is and how it feels - is it cramping, sharp, or more of a dull ache? If the pain becomes severe, you start vomiting blood, or you become dehydrated, don't wait - get medical help right away. Those are signs we can't ignore.`
     ]
   };
 
@@ -39,24 +39,18 @@ const generateMedicalResponse = (symptoms: string, patientContext?: any) => {
 
   // Default response if no specific condition matched
   if (selectedResponses.length === 0) {
+    const greeting = patientContext?.name ? `${patientContext.name}, thanks for reaching out about your symptoms. ` : 'Thank you for sharing what you\'re experiencing with me. ';
     selectedResponses = [
-      "Thank you for sharing your symptoms with me. While I can provide general guidance, it's important to have a proper medical evaluation for an accurate diagnosis.",
-      "Based on what you've described, I recommend monitoring your symptoms closely. If they worsen, persist, or you develop new concerning symptoms, please consult with a healthcare provider."
+      `${greeting}While I can offer some general guidance based on what you've told me, I think it would be best for you to have a proper examination so we can get to the bottom of what's going on.`,
+      `In the meantime, keep monitoring how you're feeling. If things get worse or you develop any new symptoms that concern you, don't hesitate to seek medical care. Trust your instincts about your body.`
     ];
   }
 
-  // Build comprehensive response
-  let response = `Hello${patientContext?.name ? ` ${patientContext.name}` : ''}! I understand you're experiencing: ${symptoms}\n\n`;
-  
-  response += selectedResponses.join('\n\n');
-  
-  response += '\n\n**Important Reminders:**\n';
-  response += '- This is general guidance and not a substitute for professional medical advice\n';
-  response += '- For urgent symptoms or emergencies, contact emergency services immediately\n';
-  response += '- Consider scheduling an appointment with your healthcare provider for proper evaluation\n';
+  // Build natural response
+  let response = selectedResponses.join(' ');
   
   if (patientContext?.medical_history && patientContext.medical_history !== 'none') {
-    response += `\n**Note:** Given your medical history of ${patientContext.medical_history}, please discuss these symptoms with your regular healthcare provider.`;
+    response += ` Given your history with ${patientContext.medical_history}, I'd especially encourage you to discuss these symptoms with your regular doctor who knows your medical background.`;
   }
 
   return response;
