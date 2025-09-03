@@ -23,6 +23,18 @@ const generateMedicalResponse = (symptoms: string, patientContext?: any) => {
     "stomach pain": [
       `${patientContext?.name ? `${patientContext.name}, ` : ''}stomach pain can have so many different causes, and I know how uncomfortable it can be. Think about when it started - was it after eating something specific? Are you feeling stressed? Sometimes our digestive system really responds to what's going on in our lives. For now, try sticking to bland, easy-to-digest foods like toast, rice, or bananas. Avoid anything spicy, greasy, or acidic for a day or two.`,
       `Pay attention to where exactly the pain is and how it feels - is it cramping, sharp, or more of a dull ache? If the pain becomes severe, you start vomiting blood, or you become dehydrated, don't wait - get medical help right away. Those are signs we can't ignore.`
+    ],
+    "rash": [
+      `${patientContext?.name ? `${patientContext.name}, ` : ''}rashes can be tricky because they can have so many different causes. Let me help you think through this. First, when did you first notice it? Has it been getting worse, better, or staying the same? Think about whether you've used any new soaps, detergents, or skincare products recently. Sometimes our skin reacts to things we've been fine with before, especially if we're stressed or our immune system is a bit run down.`,
+      `For now, try to keep the area clean and dry, and avoid scratching if you can - I know that's easier said than done! If it's itchy, a cool, damp cloth might provide some relief. Avoid any new products on the area until we figure out what's going on. If the rash is spreading quickly, you develop a fever, or if you have any trouble breathing, those would be reasons to seek immediate care.`
+    ],
+    "rashes between thighs": [
+      `${patientContext?.name ? `I understand, ${patientContext.name}, ` : ''}rashes in that area can be really uncomfortable and I know it might feel awkward to talk about, but this is actually pretty common. This type of rash often happens because of friction and moisture - especially if you've been more active lately, wearing tight clothing, or if it's been hot and humid. It could also be a fungal infection, which thrives in warm, moist areas.`,
+      `Here's what I'd suggest: keep the area as clean and dry as possible, wear loose-fitting, breathable cotton underwear and clothing when you can. After showering, make sure to dry the area thoroughly - you can even use a hair dryer on cool setting if that helps. Some people find that antifungal powder or cream helps, but if it doesn't improve in a few days or gets worse, definitely see a doctor. If you develop fever, the rash spreads significantly, or you notice any discharge with a strong odor, those would be reasons to seek care sooner.`
+    ],
+    "itching": [
+      `${patientContext?.name ? `${patientContext.name}, ` : ''}itching can be so frustrating, can't it? Let's think about what might be causing this. Has it started recently or has this been going on for a while? Are you seeing any rash or just feeling the itching? Sometimes dry skin is the culprit, especially if the weather's been dry or you've been taking hot showers. Other times it could be an allergic reaction to something new you've encountered.`,
+      `Try to avoid scratching as much as possible - I know it's hard! Cool compresses can help, and keeping your skin moisturized with a gentle, fragrance-free lotion might provide relief. If you're taking any new medications, that could also be the cause. If the itching is severe, widespread, or you develop hives or swelling, especially around your face or throat, seek medical attention right away.`
     ]
   };
 
